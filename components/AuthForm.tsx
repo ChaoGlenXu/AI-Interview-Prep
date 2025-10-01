@@ -90,6 +90,7 @@ const AuthForm = ( {type}: {type: FormType} ) => {
                 </p>
             </div>
             <div className="text-blue-500">Hello Tailwind</div>
+            
 
         </div>
         
