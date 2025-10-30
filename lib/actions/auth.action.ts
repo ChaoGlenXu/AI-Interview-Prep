@@ -10,6 +10,7 @@ import {  messaging } from "firebase-admin";
 //import { doc, getDoc, setDoc } from "firebase-admin/firestore"; // Admin SDK functions  //try chatgpt advice 
 
 import { cookies } from "next/headers";
+import { use } from "react";
 import { success } from "zod";
 
 
@@ -23,11 +24,8 @@ export async function signUp( params: SignUpParams ) {
     
 
     try {
-        const userRecord = await db.collection('user'). doc(uid).get(); //for version 8 firebase, not this new version
+        const userRecord = await db.collection('user'). doc(uid).get(); 
         
-        //const db = getFirestore();
-        // const userDocRef = doc(db, "user", uid);
-        // const userRecord = await getDoc(userDocRef);
 
         if (userRecord.exists) 
             return {
@@ -35,12 +33,11 @@ export async function signUp( params: SignUpParams ) {
                 message: 'User already exists, Please sign in instead.'
             }
 
-        await db.collection('user'). doc(uid).set({
+        await db.collection('users'). doc(uid).set({
             name, email
         });
             
         
-        //await setDoc(userDocRef,{name, email} );
 
         return {
             success: true,
@@ -107,3 +104,38 @@ export async function setSessionCookie (idToken: string) {
     });
 }
 
+export async function getCurrentUser(): Promise<User | null > {
+    const cookieStore = await cookies();
+
+    const sessionCookie = cookieStore.get('session')?.value;
+
+    if (!sessionCookie) return null;
+
+    try {
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+
+        const userRecord = await db
+            .collection('users') 
+            .doc(decodedClaims.uid)
+            .get();
+
+        if (!userRecord.exists) return null;
+        
+        return {
+            ...userRecord.data(),
+            id: userRecord.id,
+        } as User;
+
+    } catch (e) {
+        console.log(e);
+
+        return null;
+    }
+
+}
+
+export async function isAuthenticated() {
+    const user = await getCurrentUser();
+
+    return !!user;
+}
